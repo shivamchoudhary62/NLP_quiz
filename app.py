@@ -103,6 +103,13 @@ st.markdown("""
         padding: 0.875rem 1.25rem !important;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
         cursor: pointer !important;
+        color: #1A1D2E !important;
+    }
+
+    .stRadio > div > label p,
+    .stRadio > div > label span,
+    .stRadio > div > label div {
+        color: #1A1D2E !important;
     }
 
     .stRadio > div > label:hover {
