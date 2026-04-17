@@ -500,6 +500,8 @@ def init_session_state():
         st.session_state.shuffled_questions = None
     if "show_results" not in st.session_state:
         st.session_state.show_results = False
+    if "question_type" not in st.session_state:
+        st.session_state.question_type = "assignment"
 
 
 init_session_state()
@@ -561,24 +563,54 @@ def reset_quiz():
     st.session_state.show_results = False
 
 
-def start_quiz(week, mode):
+def start_quiz(week, mode, question_type="assignment"):
     """Start a new quiz."""
     reset_quiz()
     st.session_state.selected_week = week
     st.session_state.quiz_mode = mode
+    st.session_state.question_type = question_type
     st.session_state.current_page = "quiz"
-    questions = QUIZ_DATA[week]["questions"].copy()
+    if question_type == "additional" and "additional_questions" in QUIZ_DATA[week]:
+        questions = QUIZ_DATA[week]["additional_questions"].copy()
+    else:
+        questions = QUIZ_DATA[week]["questions"].copy()
     if mode == "test":
         random.shuffle(questions)
     st.session_state.shuffled_questions = questions
 
 
-def start_mixed_quiz(num_questions, selected_weeks):
+def start_mixed_quiz(num_questions, selected_weeks, include_additional=True):
     """Start a mixed quiz from selected weeks."""
     reset_quiz()
     all_questions = []
     for week_key in selected_weeks:
         for q in QUIZ_DATA[week_key]["questions"]:
+            q_copy = q.copy()
+            q_copy["source_week"] = week_key
+            all_questions.append(q_copy)
+        if include_additional and "additional_questions" in QUIZ_DATA[week_key]:
+            for q in QUIZ_DATA[week_key]["additional_questions"]:
+                q_copy = q.copy()
+                q_copy["source_week"] = week_key
+                all_questions.append(q_copy)
+    random.shuffle(all_questions)
+    num_questions = min(num_questions, len(all_questions))
+    st.session_state.shuffled_questions = all_questions[:num_questions]
+    st.session_state.selected_week = "Mixed Quiz"
+    st.session_state.quiz_mode = "test"
+    st.session_state.current_page = "quiz"
+
+
+def start_mixed_quiz_typed(num_questions, selected_weeks, question_type="assignment"):
+    """Start a mixed quiz from selected weeks using either assignment or additional questions."""
+    reset_quiz()
+    all_questions = []
+    for week_key in selected_weeks:
+        if question_type == "additional":
+            source = QUIZ_DATA[week_key].get("additional_questions", [])
+        else:
+            source = QUIZ_DATA[week_key]["questions"]
+        for q in source:
             q_copy = q.copy()
             q_copy["source_week"] = week_key
             all_questions.append(q_copy)
@@ -663,7 +695,7 @@ def render_home():
     """, unsafe_allow_html=True)
 
     # Stats Row
-    total_questions = sum(len(w["questions"]) for w in QUIZ_DATA.values())
+    total_questions = sum(len(w["questions"]) + len(w.get("additional_questions", [])) for w in QUIZ_DATA.values())
     total_weeks = len(QUIZ_DATA)
     attempted_weeks = len(st.session_state.quiz_history)
 
@@ -710,11 +742,68 @@ def render_home():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # ── Question Bank Radio Toggle ──
+    total_assignment = sum(len(w["questions"]) for w in QUIZ_DATA.values())
+    total_additional = sum(len(w.get("additional_questions", [])) for w in QUIZ_DATA.values())
+
+    home_qtype = st.radio(
+        "📂 Select Question Bank",
+        options=["📝 Assignment", "📚 Additional"],
+        horizontal=True,
+        key="home_question_type",
+        help=f"Assignment: {total_assignment} questions · Additional: {total_additional} questions"
+    )
+    is_additional = home_qtype == "📚 Additional"
+
+    st.markdown("")
+
+    # Mixed Quiz Card — at the top
+    st.markdown("### 🔀 Mixed Quiz — Test Across All Weeks")
+    st.markdown("")
+
+    col_icon, col_info, col_action = st.columns([0.8, 5, 2])
+    with col_icon:
+        st.markdown("<div style='font-size: 2.5rem; text-align: center; padding-top: 0.5rem;'>🔀</div>", unsafe_allow_html=True)
+    with col_info:
+        mixed_total = total_additional if is_additional else total_assignment
+        mixed_badge = ""
+        if "Mixed Quiz" in st.session_state.quiz_history:
+            mbest = max(st.session_state.quiz_history["Mixed Quiz"])
+            if mbest >= 80:
+                mixed_badge = f'<span class="badge badge-success">✓ Best: {mbest}%</span>'
+            else:
+                mixed_badge = f'<span class="badge badge-neutral">Best: {mbest}%</span>'
+        bank_label = "Additional" if is_additional else "Assignment"
+        st.markdown(f"""
+        <div style="padding: 0.5rem 0;">
+            <div style="font-size: 1.1rem; font-weight: 700; color: #1A1D2E; margin-bottom: 0.2rem;">
+                Mixed Quiz {mixed_badge}
+            </div>
+            <div style="font-size: 0.88rem; color: #5A607F;">
+                Shuffled {bank_label.lower()} questions from all {len(QUIZ_DATA)} weeks · {mixed_total} questions available
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_action:
+        st.markdown("<div style='padding-top: 0.65rem;'>", unsafe_allow_html=True)
+        if st.button("Configure →", key="start_mixed_home", use_container_width=True):
+            st.session_state.mixed_question_type = "additional" if is_additional else "assignment"
+            st.session_state.current_page = "mixed"
+            reset_quiz()
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("---")
+
     # Week Cards
-    st.markdown("### 📚 Select a Week to Begin")
+    st.markdown(f"### 📚 {bank_label} — Select a Week to Begin")
     st.markdown("")
 
     for week_key, week_data in QUIZ_DATA.items():
+        if is_additional:
+            q_count = len(week_data.get("additional_questions", []))
+        else:
+            q_count = len(week_data["questions"])
+
         col_icon, col_info, col_action = st.columns([0.8, 5, 2])
 
         with col_icon:
@@ -730,63 +819,35 @@ def render_home():
                 else:
                     badge_html = f'<span class="badge badge-neutral">Best: {best}%</span>'
 
+            # Show unavailable badge for weeks with 0 questions
+            if q_count == 0:
+                badge_html = '<span class="badge badge-error">No questions</span>'
+
             st.markdown(f"""
             <div style="padding: 0.5rem 0;">
                 <div style="font-size: 1.1rem; font-weight: 700; color: #1A1D2E; margin-bottom: 0.2rem;">
                     {week_key} {badge_html}
                 </div>
                 <div style="font-size: 0.88rem; color: #5A607F;">
-                    {week_data['title']} · {len(week_data['questions'])} questions
+                    {week_data['title']} · {q_count} questions
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
         with col_action:
             st.markdown("<div style='padding-top: 0.65rem;'>", unsafe_allow_html=True)
-            if st.button("Start →", key=f"start_{week_key}", use_container_width=True):
-                st.session_state.selected_week = week_key
-                st.session_state.current_page = "week_detail"
-                reset_quiz()
-                st.rerun()
+            if q_count > 0:
+                if st.button("Start →", key=f"start_{week_key}", use_container_width=True):
+                    st.session_state.selected_week = week_key
+                    st.session_state.question_type = "additional" if is_additional else "assignment"
+                    st.session_state.current_page = "week_detail"
+                    reset_quiz()
+                    st.rerun()
+            else:
+                st.button("Start →", key=f"start_{week_key}", use_container_width=True, disabled=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("---")
-
-    # Mixed Quiz Card
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 🔀 Mixed Quiz — Test Across All Weeks")
-    st.markdown("")
-
-    col_icon, col_info, col_action = st.columns([0.8, 5, 2])
-    with col_icon:
-        st.markdown("<div style='font-size: 2.5rem; text-align: center; padding-top: 0.5rem;'>🔀</div>", unsafe_allow_html=True)
-    with col_info:
-        total_q = sum(len(w['questions']) for w in QUIZ_DATA.values())
-        mixed_badge = ""
-        if "Mixed Quiz" in st.session_state.quiz_history:
-            mbest = max(st.session_state.quiz_history["Mixed Quiz"])
-            if mbest >= 80:
-                mixed_badge = f'<span class="badge badge-success">✓ Best: {mbest}%</span>'
-            else:
-                mixed_badge = f'<span class="badge badge-neutral">Best: {mbest}%</span>'
-        st.markdown(f"""
-        <div style="padding: 0.5rem 0;">
-            <div style="font-size: 1.1rem; font-weight: 700; color: #1A1D2E; margin-bottom: 0.2rem;">
-                Mixed Quiz {mixed_badge}
-            </div>
-            <div style="font-size: 0.88rem; color: #5A607F;">
-                Shuffled questions from all {len(QUIZ_DATA)} weeks · {total_q} questions available
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col_action:
-        st.markdown("<div style='padding-top: 0.65rem;'>", unsafe_allow_html=True)
-        if st.button("Configure →", key="start_mixed_home", use_container_width=True):
-            st.session_state.current_page = "mixed"
-            reset_quiz()
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown("---")
 
 
 # ─────────────────────────────────────────────────
@@ -805,13 +866,27 @@ def render_week_detail():
     </div>
     """, unsafe_allow_html=True)
 
+    # Get question type from session (set on home page)
+    current_type = st.session_state.question_type
+    assignment_count = len(week_data["questions"])
+    additional_count = len(week_data.get("additional_questions", []))
+    has_additional = additional_count > 0
+
+    if current_type == "additional" and has_additional:
+        type_label = "Additional Questions"
+        type_count = additional_count
+    else:
+        current_type = "assignment"
+        type_label = "Assignment"
+        type_count = assignment_count
+
     # Info cards row
     col1, col2, col3 = st.columns(3)
     with col1:
         st.markdown(f"""
         <div class="stat-card">
-            <div class="stat-value">{len(week_data['questions'])}</div>
-            <div class="stat-label">Questions</div>
+            <div class="stat-value">{type_count}</div>
+            <div class="stat-label">{type_label}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -842,6 +917,17 @@ def render_week_detail():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # Show current question bank selection with option to switch
+    st.info(f"📌 Question Bank: **{type_label}** ({type_count} questions)")
+
+    if has_additional:
+        switch_label = "Switch to Additional" if current_type == "assignment" else "Switch to Assignment"
+        if st.button(f"🔄 {switch_label}", key="switch_qtype", use_container_width=False):
+            st.session_state.question_type = "additional" if current_type == "assignment" else "assignment"
+            st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
     # Mode Selection
     st.markdown("### Choose Quiz Mode")
     st.markdown("")
@@ -860,7 +946,7 @@ def render_week_detail():
         """, unsafe_allow_html=True)
         st.markdown("")
         if st.button("Start Practice", key="start_practice", use_container_width=True):
-            start_quiz(week_key, "practice")
+            start_quiz(week_key, "practice", current_type)
             st.rerun()
 
     with col_b:
@@ -875,14 +961,14 @@ def render_week_detail():
         """, unsafe_allow_html=True)
         st.markdown("")
         if st.button("Start Test", key="start_test", use_container_width=True):
-            start_quiz(week_key, "test")
+            start_quiz(week_key, "test", current_type)
             st.rerun()
 
     # Quick Look at Topics
     st.markdown("<br>", unsafe_allow_html=True)
-    with st.expander("📋 Preview Question Topics"):
-        for i, q in enumerate(week_data["questions"], 1):
-            # Show first 80 chars of each question
+    preview_questions = week_data.get("additional_questions", []) if current_type == "additional" else week_data["questions"]
+    with st.expander(f"📋 Preview Question Topics ({len(preview_questions)} questions)"):
+        for i, q in enumerate(preview_questions, 1):
             preview = q["question"][:90] + ("..." if len(q["question"]) > 90 else "")
             st.markdown(f"**Q{i}.** {preview}")
 
@@ -1310,10 +1396,15 @@ def render_mixed_quiz_setup():
     </div>
     """, unsafe_allow_html=True)
 
-    total_q = sum(len(w["questions"]) for w in QUIZ_DATA.values())
+    # Initialize mixed question type
+    if "mixed_question_type" not in st.session_state:
+        st.session_state.mixed_question_type = "assignment"
 
     # Stats row
-    col1, col2, col3 = st.columns(3)
+    total_assignment = sum(len(w["questions"]) for w in QUIZ_DATA.values())
+    total_additional = sum(len(w.get("additional_questions", [])) for w in QUIZ_DATA.values())
+
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(f"""
         <div class="stat-card">
@@ -1324,11 +1415,18 @@ def render_mixed_quiz_setup():
     with col2:
         st.markdown(f"""
         <div class="stat-card">
-            <div class="stat-value">{total_q}</div>
-            <div class="stat-label">Total Questions</div>
+            <div class="stat-value">{total_assignment}</div>
+            <div class="stat-label">Assignment Q's</div>
         </div>
         """, unsafe_allow_html=True)
     with col3:
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-value">{total_additional}</div>
+            <div class="stat-label">Additional Q's</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col4:
         if "Mixed Quiz" in st.session_state.quiz_history:
             mbest = max(st.session_state.quiz_history["Mixed Quiz"])
             mbest_display = f"{mbest}%"
@@ -1344,6 +1442,43 @@ def render_mixed_quiz_setup():
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### ⚙️ Configure Your Mixed Quiz")
     st.markdown("")
+
+    # Question Type Selection — Assignment vs Additional
+    st.markdown("**Select question bank:**")
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        assign_style = "border: 2px solid #6366F1; background: #EEF2FF;" if st.session_state.mixed_question_type == "assignment" else ""
+        st.markdown(f"""
+        <div class="stat-card" style="text-align: left; padding: 1.25rem; {assign_style}">
+            <div style="font-size: 1.5rem; margin-bottom: 0.3rem;">📝</div>
+            <div style="font-size: 1rem; font-weight: 700; color: #1A1D2E; margin-bottom: 0.2rem;">Assignment</div>
+            <div style="font-size: 0.85rem; color: #5A607F;">{total_assignment} questions (10/week)</div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("")
+        if st.button("Select Assignment", key="mixed_sel_assignment", use_container_width=True):
+            st.session_state.mixed_question_type = "assignment"
+            st.rerun()
+
+    with col_t2:
+        addtl_style = "border: 2px solid #6366F1; background: #EEF2FF;" if st.session_state.mixed_question_type == "additional" else ""
+        st.markdown(f"""
+        <div class="stat-card" style="text-align: left; padding: 1.25rem; {addtl_style}">
+            <div style="font-size: 1.5rem; margin-bottom: 0.3rem;">📚</div>
+            <div style="font-size: 1rem; font-weight: 700; color: #1A1D2E; margin-bottom: 0.2rem;">Additional Questions</div>
+            <div style="font-size: 0.85rem; color: #5A607F;">{total_additional} questions (30/week)</div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("")
+        if st.button("Select Additional", key="mixed_sel_additional", use_container_width=True):
+            st.session_state.mixed_question_type = "additional"
+            st.rerun()
+
+    mixed_qtype = st.session_state.mixed_question_type
+    type_label = "Assignment" if mixed_qtype == "assignment" else "Additional Questions"
+    st.info(f"📌 Selected: **{type_label}**")
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # Week selection
     st.markdown("**Select weeks to include:**")
@@ -1369,10 +1504,22 @@ def render_mixed_quiz_setup():
     for i, week_key in enumerate(week_keys):
         week_data = QUIZ_DATA[week_key]
         col_idx = i % 3
+        if mixed_qtype == "assignment":
+            q_count = len(week_data["questions"])
+        else:
+            q_count = len(week_data.get("additional_questions", []))
         with cols[col_idx]:
             checked = week_key in st.session_state.mixed_selected_weeks
-            if st.checkbox(
-                f"{week_data['icon']} {week_key} ({len(week_data['questions'])}Q)",
+            # Skip weeks with 0 questions for the selected type
+            if q_count == 0 and mixed_qtype == "additional":
+                st.checkbox(
+                    f"{week_data['icon']} {week_key} (0Q)",
+                    value=False,
+                    disabled=True,
+                    key=f"mixed_week_{week_key}"
+                )
+            elif st.checkbox(
+                f"{week_data['icon']} {week_key} ({q_count}Q)",
                 value=checked,
                 key=f"mixed_week_{week_key}"
             ):
@@ -1381,8 +1528,14 @@ def render_mixed_quiz_setup():
     # Update selected weeks in session state
     st.session_state.mixed_selected_weeks = selected_weeks
 
-    # Calculate available questions
-    available_q = sum(len(QUIZ_DATA[w]["questions"]) for w in selected_weeks) if selected_weeks else 0
+    # Calculate available questions based on type
+    if selected_weeks:
+        if mixed_qtype == "assignment":
+            available_q = sum(len(QUIZ_DATA[w]["questions"]) for w in selected_weeks)
+        else:
+            available_q = sum(len(QUIZ_DATA[w].get("additional_questions", [])) for w in selected_weeks)
+    else:
+        available_q = 0
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1400,7 +1553,7 @@ def render_mixed_quiz_setup():
         )
     else:
         num_questions = 0
-        st.warning("⚠️ Please select at least one week.")
+        st.warning("⚠️ Please select at least one week with questions available.")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1410,7 +1563,7 @@ def render_mixed_quiz_setup():
         <div class="stat-card" style="text-align: left; padding: 1.5rem;">
             <div style="font-size: 1.1rem; font-weight: 700; color: #1A1D2E; margin-bottom: 0.5rem;">📋 Quiz Summary</div>
             <div style="font-size: 0.9rem; color: #5A607F; line-height: 1.8;">
-                • <strong>{num_questions}</strong> questions from <strong>{len(selected_weeks)}</strong> week(s)<br>
+                • <strong>{num_questions}</strong> {type_label.lower()} questions from <strong>{len(selected_weeks)}</strong> week(s)<br>
                 • Questions will be <strong>shuffled randomly</strong><br>
                 • Results shown after submitting all answers<br>
                 • Each question shows its source week in review
@@ -1422,7 +1575,9 @@ def render_mixed_quiz_setup():
         col_l, col_c, col_r = st.columns([1, 2, 1])
         with col_c:
             if st.button("🚀 Start Mixed Quiz", key="launch_mixed", use_container_width=True):
-                start_mixed_quiz(num_questions, selected_weeks)
+                include_additional = (mixed_qtype == "additional")
+                # Use the appropriate question source
+                start_mixed_quiz_typed(num_questions, selected_weeks, mixed_qtype)
                 st.rerun()
 
 
