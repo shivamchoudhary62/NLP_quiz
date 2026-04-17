@@ -1011,7 +1011,11 @@ def render_practice_quiz():
 def render_test_quiz():
     """Render quiz in test mode — all questions, submit at end."""
     week_key = st.session_state.selected_week
-    week_data = QUIZ_DATA[week_key]
+    is_mixed = (week_key == "Mixed Quiz")
+    if is_mixed:
+        week_title = "Shuffled Questions from Multiple Weeks"
+    else:
+        week_title = QUIZ_DATA[week_key]["title"]
     questions = st.session_state.shuffled_questions
     total = len(questions)
 
@@ -1020,14 +1024,15 @@ def render_test_quiz():
         return
 
     # Header
+    mode_label = "Mixed Mode" if is_mixed else "Test Mode"
     st.markdown(f"""
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
         <div>
             <span style="font-size: 0.78rem; font-weight: 600; color: #8E94B2; text-transform: uppercase; letter-spacing: 0.06em;">
-                {week_key} · Test Mode
+                {week_key} · {mode_label}
             </span>
             <div style="font-size: 1.25rem; font-weight: 700; color: #1A1D2E; margin-top: 0.15rem;">
-                {week_data['title']}
+                {week_title}
             </div>
         </div>
         <div>
