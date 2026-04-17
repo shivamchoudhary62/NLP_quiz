@@ -2,7 +2,7 @@
 
 An interactive quiz application for the **NPTEL Time Series Analysis** course, built with Streamlit. Test and reinforce your understanding of time series concepts — from stationarity basics to machine learning forecasting.
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://shivamchoudhary62-nlp-quiz.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://shivamchoudhary62-nlp-quiz-vtgtj3movc.streamlit.app)
 
 ---
 
