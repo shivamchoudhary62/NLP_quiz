@@ -515,6 +515,85 @@ st.markdown("""
         line-height: 1.6 !important;
         overflow-x: auto;
     }
+
+    /* ── Native Details/Summary (mobile-safe expander replacement) ── */
+    .review-details {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        margin-bottom: 0.5rem;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .review-details summary {
+        padding: 0.875rem 1.25rem;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        list-style: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        user-select: none;
+        transition: background 0.2s ease;
+    }
+
+    .review-details summary:hover {
+        background: var(--bg-secondary);
+    }
+
+    .review-details summary::-webkit-details-marker { display: none; }
+    .review-details summary::marker { display: none; content: ''; }
+
+    .review-details summary::after {
+        content: '+';
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        transition: transform 0.2s ease;
+    }
+
+    .review-details[open] summary::after {
+        content: '-';
+    }
+
+    .review-details .details-body {
+        padding: 0 1.25rem 1.25rem;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .review-details.correct-item {
+        border-left: 4px solid var(--success);
+    }
+
+    .review-details.incorrect-item {
+        border-left: 4px solid var(--error);
+    }
+
+    .correct-tag {
+        display: inline-block;
+        background: #ECFDF5;
+        color: #059669;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.15rem 0.6rem;
+        border-radius: 99px;
+        border: 1px solid #A7F3D0;
+    }
+
+    .incorrect-tag {
+        display: inline-block;
+        background: #FEF2F2;
+        color: #DC2626;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.15rem 0.6rem;
+        border-radius: 99px;
+        border: 1px solid #FECACA;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1047,10 +1126,18 @@ def render_week_detail():
     # Quick Look at Topics
     st.markdown("<br>", unsafe_allow_html=True)
     preview_questions = week_data.get("additional_questions", []) if current_type == "additional" else week_data["questions"]
-    with st.expander(f"📋 Preview Question Topics ({len(preview_questions)} questions)"):
-        for i, q in enumerate(preview_questions, 1):
-            preview = q["question"][:90] + ("..." if len(q["question"]) > 90 else "")
-            st.markdown(f"**Q{i}.** {preview}")
+    preview_items = ""
+    for i, q in enumerate(preview_questions, 1):
+        preview = q["question"][:90] + ("..." if len(q["question"]) > 90 else "")
+        preview_items += f"<div style='padding: 0.4rem 0; font-size: 0.9rem; color: #1A1D2E;'><strong>Q{i}.</strong> {preview}</div>"
+    st.markdown(f"""
+    <details class="review-details">
+        <summary>Preview Question Topics ({len(preview_questions)} questions)</summary>
+        <div class="details-body">
+            {preview_items}
+        </div>
+    </details>
+    """, unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────
@@ -1332,75 +1419,78 @@ def render_results():
             st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 📋 Detailed Review")
+    st.markdown("### Detailed Review")
     st.markdown("")
 
+    # Build all review items as pure HTML for mobile compatibility (no st.expander)
+    review_html = ""
     for i, q in enumerate(questions):
         answer_data = st.session_state.answers.get(i, {})
         is_correct = answer_data.get("correct", False)
         selected = answer_data.get("selected", "Not answered")
 
-        status_label = "[Correct]" if is_correct else "[Incorrect]"
+        css_class = "correct-item" if is_correct else "incorrect-item"
+        tag_class = "correct-tag" if is_correct else "incorrect-tag"
+        tag_text = "Correct" if is_correct else "Incorrect"
 
-        # Show source week for mixed quiz
-        source_label = ""
+        # Source week label for mixed quiz
+        source_html = ""
         if is_mixed and "source_week" in q:
-            source_label = f" [{q['source_week']}]"
+            source_html = f" <span style='font-size: 0.8rem; color: #8E94B2;'>[{q['source_week']}]</span>"
 
-        with st.expander(f"Question {i + 1}{source_label}: {status_label}"):
-            # Colored status banner inside the expander
-            if is_correct:
-                st.markdown("""
+        # Build options HTML
+        options_html = ""
+        for j, option in enumerate(q["options"]):
+            if j == q["correct"] and is_correct:
+                options_html += f"""
                 <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px;
-                            padding: 0.5rem 1rem; margin-bottom: 0.75rem; font-weight: 600; color: #059669;">
-                    Correct
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown("""
+                            padding: 0.5rem 1rem; margin: 0.25rem 0; color: #065F46;">
+                    <strong>{option}</strong> &larr; Your answer (Correct)
+                </div>"""
+            elif j == q["correct"] and not is_correct:
+                options_html += f"""
+                <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px;
+                            padding: 0.5rem 1rem; margin: 0.25rem 0; color: #065F46;">
+                    <strong>{option}</strong> &larr; Correct answer
+                </div>"""
+            elif option == selected and not is_correct:
+                options_html += f"""
                 <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px;
-                            padding: 0.5rem 1rem; margin-bottom: 0.75rem; font-weight: 600; color: #DC2626;">
-                    Incorrect
+                            padding: 0.5rem 1rem; margin: 0.25rem 0; color: #991B1B;
+                            text-decoration: line-through;">
+                    {option} &larr; Your answer
+                </div>"""
+            else:
+                options_html += f"""
+                <div style="padding: 0.5rem 1rem; margin: 0.25rem 0; color: #5A607F;">
+                    &#9675; {option}
+                </div>"""
+
+        # Explanation
+        explanation_html = f"""
+        <div style="background: #F5F3FF; border-left: 4px solid #6366F1;
+                    border-radius: 0 8px 8px 0; padding: 0.75rem 1rem; margin-top: 0.75rem;
+                    font-size: 0.9rem; color: #5A607F; line-height: 1.6;">
+            <strong>Explanation:</strong> {q['explanation']}
+        </div>"""
+
+        review_html += f"""
+        <details class="review-details {css_class}">
+            <summary>
+                <span>Q{i + 1}{source_html}</span>
+                <span class="{tag_class}">{tag_text}</span>
+            </summary>
+            <div class="details-body">
+                <div style="font-weight: 600; font-size: 0.95rem; color: #1A1D2E; margin: 0.75rem 0;">
+                    {q['question']}
                 </div>
-                """, unsafe_allow_html=True)
+                {options_html}
+                {explanation_html}
+            </div>
+        </details>
+        """
 
-            if is_mixed and "source_week" in q:
-                st.caption(f"Source: {q['source_week']}")
-            st.markdown(f"**{q['question']}**")
-            st.markdown("")
-
-            for j, option in enumerate(q["options"]):
-                if j == q["correct"] and is_correct:
-                    st.markdown(f"""
-                    <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px;
-                                padding: 0.5rem 1rem; margin: 0.25rem 0; color: #065F46;">
-                        <strong>{option}</strong> &larr; Your answer (Correct)
-                    </div>
-                    """, unsafe_allow_html=True)
-                elif j == q["correct"] and not is_correct:
-                    st.markdown(f"""
-                    <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px;
-                                padding: 0.5rem 1rem; margin: 0.25rem 0; color: #065F46;">
-                        <strong>{option}</strong> &larr; Correct answer
-                    </div>
-                    """, unsafe_allow_html=True)
-                elif option == selected and not is_correct:
-                    st.markdown(f"""
-                    <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px;
-                                padding: 0.5rem 1rem; margin: 0.25rem 0; color: #991B1B;
-                                text-decoration: line-through;">
-                        {option} &larr; Your answer
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div style="padding: 0.5rem 1rem; margin: 0.25rem 0; color: #5A607F;">
-                        &#9675; {option}
-                    </div>
-                    """, unsafe_allow_html=True)
-
-            st.markdown("")
-            st.info(f"**Explanation:** {q['explanation']}")
+    st.markdown(review_html, unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────
