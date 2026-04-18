@@ -1,15 +1,40 @@
-# 📉 Time Series NPTL Quiz Dashboard
+# 📉 NPTEL: Time Series Modelling and Forecasting with Applications in R — Quiz Dashboard
 
-An interactive quiz application for the **NPTEL Time Series Analysis** course, built with Streamlit. Test and reinforce your understanding of time series concepts — from stationarity basics to machine learning forecasting.
+> **Free interactive practice quiz** for the NPTEL course **"Time Series Modelling and Forecasting with Applications in R"**. 121+ questions across 12 weeks with instant feedback, detailed explanations, and performance tracking.
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://shivamchoudhary62-nlp-quiz-vtgtj3movc.streamlit.app)
+
+**🔗 [Take the Quiz Now →](https://shivamchoudhary62-nlp-quiz-vtgtj3movc.streamlit.app)**
+
+**🌐 [Official NPTEL Course Page →](https://onlinecourses.nptel.ac.in/noc26_cs20/preview)**
+
+---
+
+## 🔍 What is this?
+
+This is a **free, open-source quiz dashboard** designed for students enrolled in the **NPTEL course "Time Series Modelling and Forecasting with Applications in R"**. Whether you're preparing for your weekly assignments, the final exam, or just want to test your understanding of time series concepts — this tool has you covered.
+
+### Key topics covered:
+
+- Introduction to Time Series Data
+- White Noise, AR, MA Models & Decomposition
+- ARIMA, Seasonality & Stationarity Tests (ADF, KPSS)
+- Model Selection, Estimation & Diagnostics (AIC, BIC)
+- Forecasting & Exponential Smoothing (Holt-Winters)
+- Long Memory, ARFIMA & Hurst Exponent
+- Multivariate Time Series & VAR/VMA Models
+- Cointegration, ECM & Granger Causality
+- Spectral Analysis & Frequency Domain Methods
+- Volatility Modelling: ARCH & GARCH
+- Nonlinear Models: TAR, STAR & Markov Switching
+- Machine Learning for Time Series Forecasting
 
 ---
 
 ## ✨ Features
 
 - **12 Weeks** of curated questions covering the full NPTEL syllabus
-- **121 Questions** with detailed explanations for every answer
+- **121+ Questions** with detailed explanations for every answer
 - **Practice Mode** — instant feedback after each question
 - **Test Mode** — submit all answers at once, then review
 - **🔀 Mixed Quiz** — shuffled questions from selected weeks with configurable question count
@@ -18,7 +43,7 @@ An interactive quiz application for the **NPTEL Time Series Analysis** course, b
 
 ---
 
-## 📚 Weekly Topics
+## 📚 Weekly Topics — NPTEL Time Series Modelling and Forecasting
 
 | Week | Topic | Questions |
 |------|-------|:---------:|
@@ -39,6 +64,10 @@ An interactive quiz application for the **NPTEL Time Series Analysis** course, b
 
 ## 🚀 Quick Start
 
+### Try it online (no installation needed)
+
+👉 **[https://shivamchoudhary62-nlp-quiz-vtgtj3movc.streamlit.app](https://shivamchoudhary62-nlp-quiz-vtgtj3movc.streamlit.app)**
+
 ### Run Locally
 
 ```bash
@@ -55,8 +84,6 @@ streamlit run app.py
 
 The app will open at `http://localhost:8501`.
 
-
-
 ---
 
 ## 🛠️ Tech Stack
@@ -72,11 +99,20 @@ The app will open at `http://localhost:8501`.
 ```
 NLP_quiz/
 ├── app.py              # Main Streamlit application
-├── questions.py        # Question bank (12 weeks, 121 questions)
+├── questions.py        # Question bank (12 weeks, 121+ questions)
 ├── requirements.txt    # Python dependencies
 ├── .gitignore
 └── README.md
 ```
+
+---
+
+## 🎯 Who is this for?
+
+- **NPTEL students** taking "Time Series Modelling and Forecasting with Applications in R"
+- Students preparing for **NPTEL weekly assignment quizzes**
+- Anyone studying **time series analysis, ARIMA, GARCH, VAR models** in R
+- Students looking for **NPTEL exam preparation** resources
 
 ---
 
@@ -99,5 +135,5 @@ This project is open source and available for educational purposes.
 ---
 
 <p align="center">
-  Built with ❤️ for NPTEL Time Series Analysis students
+  Built with ❤️ for NPTEL Time Series Modelling and Forecasting students
 </p>

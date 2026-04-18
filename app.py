@@ -1,6 +1,7 @@
 """
-Time Series NPTL Quiz Dashboard
-A beautiful Streamlit-based quiz application for NPTEL Time Series Analysis course.
+NPTEL Time Series Modelling and Forecasting with Applications in R — Quiz Dashboard
+A beautiful Streamlit-based quiz application for the NPTEL course:
+"Time Series Modelling and Forecasting with Applications in R"
 """
 
 import streamlit as st
@@ -12,11 +13,30 @@ from questions import QUIZ_DATA
 # Page Configuration
 # ─────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Time Series NPTL Quiz",
+    page_title="NPTEL Time Series Modelling and Forecasting with Applications in R — Quiz",
     page_icon="📉",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ─────────────────────────────────────────────────
+# SEO Meta Tags for Google Discoverability
+# ─────────────────────────────────────────────────
+st.markdown("""
+<meta name="description" content="Free NPTEL quiz for Time Series Modelling and Forecasting with Applications in R. Practice 121+ questions across 12 weeks covering ARIMA, GARCH, VAR, cointegration, spectral analysis, and machine learning forecasting. Prepare for your NPTEL exam with instant feedback and detailed explanations.">
+<meta name="keywords" content="NPTEL quiz, Time Series Modelling and Forecasting with Applications in R, NPTEL time series quiz, NPTEL assignment answers, NPTEL weekly quiz, time series analysis R, ARIMA, GARCH, VAR model, cointegration, exponential smoothing, spectral analysis, NPTEL 2025, NPTEL 2026, NPTEL practice quiz, time series forecasting quiz, NPTEL exam preparation">
+<meta name="author" content="Shivam Choudhary">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="NPTEL Time Series Modelling and Forecasting with Applications in R — Practice Quiz">
+<meta property="og:description" content="Interactive quiz dashboard with 121+ questions covering all 12 weeks of the NPTEL Time Series Modelling and Forecasting course. Practice mode, test mode, mixed quizzes, and performance tracking.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://shivamchoudhary62-nlp-quiz-vtgtj3movc.streamlit.app">
+<meta property="og:see_also" content="https://onlinecourses.nptel.ac.in/noc26_cs20/preview">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NPTEL Time Series Modelling and Forecasting with Applications in R — Quiz">
+<meta name="twitter:description" content="Practice quiz for NPTEL Time Series Modelling and Forecasting with Applications in R. 121+ questions, 12 weeks, instant feedback.">
+<link rel="canonical" href="https://shivamchoudhary62-nlp-quiz-vtgtj3movc.streamlit.app">
+""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────
 # Custom CSS for Premium White Theme
@@ -438,10 +458,32 @@ st.markdown("""
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-    /* ── Hide Streamlit Branding ── */
+    /* ── Hide Streamlit Branding (keep header for mobile hamburger menu) ── */
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
-    header { visibility: hidden; }
+    /* NOTE: header is NOT hidden so that the mobile hamburger/sidebar toggle remains accessible */
+
+    /* ── Mobile-Friendly Adjustments ── */
+    @media (max-width: 768px) {
+        .main .block-container {
+            padding: 1rem 0.75rem 3rem;
+        }
+        .hero-banner {
+            padding: 1.75rem 1.25rem;
+        }
+        .hero-banner h1 {
+            font-size: 1.5rem !important;
+        }
+        .question-card {
+            padding: 1.25rem;
+        }
+        .stat-card {
+            padding: 1rem;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+        }
+    }
 
     /* ── Sidebar Week Selector ── */
     .sidebar-section-title {
@@ -474,6 +516,30 @@ st.markdown("""
         overflow-x: auto;
     }
 </style>
+""", unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────────
+# JavaScript: Handle Android Back Button & Mobile UX
+# ─────────────────────────────────────────────────
+st.markdown("""
+<script>
+(function() {
+    // Push a dummy history state so Android back button doesn't close the tab
+    if (window.history && window.history.pushState) {
+        // Only push state once per page load
+        if (!window._backHandlerInitialized) {
+            window._backHandlerInitialized = true;
+            window.history.pushState({page: 'quiz'}, '', window.location.href);
+            window.history.pushState({page: 'quiz'}, '', window.location.href);
+
+            window.addEventListener('popstate', function(event) {
+                // Re-push state to keep the user on the page
+                window.history.pushState({page: 'quiz'}, '', window.location.href);
+            });
+        }
+    }
+})();
+</script>
 """, unsafe_allow_html=True)
 
 
@@ -631,8 +697,8 @@ def render_sidebar():
         st.markdown("""
         <div style="text-align: center; padding: 1rem 0 0.5rem;">
             <div style="font-size: 2.5rem; margin-bottom: 0.25rem;">📉</div>
-            <div style="font-size: 1.15rem; font-weight: 800; color: #1A1D2E; letter-spacing: -0.02em;">Time Series</div>
-            <div style="font-size: 0.82rem; font-weight: 500; color: #5A607F;">NPTL Quiz Dashboard</div>
+            <div style="font-size: 1rem; font-weight: 800; color: #1A1D2E; letter-spacing: -0.02em; line-height: 1.3;">Time Series Modelling<br>& Forecasting in R</div>
+            <div style="font-size: 0.78rem; font-weight: 500; color: #5A607F; margin-top: 0.25rem;">NPTEL Quiz Dashboard</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -674,9 +740,15 @@ def render_sidebar():
         st.markdown("""
         <div style="text-align: center; padding: 0.5rem 0;">
             <div style="font-size: 0.72rem; color: #8E94B2; line-height: 1.5;">
-                NPTEL Time Series Analysis<br>
+                NPTEL: Time Series Modelling<br>
+                & Forecasting with Applications in R<br>
                 Built with ❤️ using Streamlit
             </div>
+            <a href="https://onlinecourses.nptel.ac.in/noc26_cs20/preview" target="_blank"
+               style="display: inline-block; margin-top: 0.5rem; font-size: 0.72rem; color: #6366F1;
+                      font-weight: 600; text-decoration: none;">
+                🌐 Official NPTEL Course Page →
+            </a>
         </div>
         """, unsafe_allow_html=True)
 
@@ -689,8 +761,16 @@ def render_home():
     # Hero Banner
     st.markdown("""
     <div class="hero-banner">
-        <h1>📉 Time Series NPTL Quiz</h1>
-        <p>Master Time Series Analysis through interactive quizzes — from basics to advanced concepts</p>
+        <h1>📉 Time Series Modelling & Forecasting in R</h1>
+        <p>NPTEL Quiz Dashboard — Master Time Series concepts through interactive quizzes, from basics to advanced forecasting</p>
+        <a href="https://onlinecourses.nptel.ac.in/noc26_cs20/preview" target="_blank"
+           style="display: inline-block; margin-top: 0.75rem; padding: 0.45rem 1.25rem;
+                  background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
+                  border-radius: 99px; color: #fff; font-size: 0.85rem; font-weight: 600;
+                  text-decoration: none; position: relative; z-index: 1;
+                  transition: background 0.2s ease;">
+            🌐 Visit Official NPTEL Course Page
+        </a>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1260,31 +1340,67 @@ def render_results():
         is_correct = answer_data.get("correct", False)
         selected = answer_data.get("selected", "Not answered")
 
-        status_icon = "✅" if is_correct else "❌"
+        status_label = "[Correct]" if is_correct else "[Incorrect]"
 
         # Show source week for mixed quiz
         source_label = ""
         if is_mixed and "source_week" in q:
             source_label = f" [{q['source_week']}]"
 
-        with st.expander(f"{status_icon} Question {i + 1}{source_label}: {'Correct' if is_correct else 'Incorrect'}"):
+        with st.expander(f"Question {i + 1}{source_label}: {status_label}"):
+            # Colored status banner inside the expander
+            if is_correct:
+                st.markdown("""
+                <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px;
+                            padding: 0.5rem 1rem; margin-bottom: 0.75rem; font-weight: 600; color: #059669;">
+                    Correct
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px;
+                            padding: 0.5rem 1rem; margin-bottom: 0.75rem; font-weight: 600; color: #DC2626;">
+                    Incorrect
+                </div>
+                """, unsafe_allow_html=True)
+
             if is_mixed and "source_week" in q:
-                st.caption(f"📌 Source: {q['source_week']}")
+                st.caption(f"Source: {q['source_week']}")
             st.markdown(f"**{q['question']}**")
             st.markdown("")
 
             for j, option in enumerate(q["options"]):
                 if j == q["correct"] and is_correct:
-                    st.markdown(f"✅ **{option}** ← Your answer (Correct)")
+                    st.markdown(f"""
+                    <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px;
+                                padding: 0.5rem 1rem; margin: 0.25rem 0; color: #065F46;">
+                        <strong>{option}</strong> &larr; Your answer (Correct)
+                    </div>
+                    """, unsafe_allow_html=True)
                 elif j == q["correct"] and not is_correct:
-                    st.markdown(f"✅ **{option}** ← Correct answer")
+                    st.markdown(f"""
+                    <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px;
+                                padding: 0.5rem 1rem; margin: 0.25rem 0; color: #065F46;">
+                        <strong>{option}</strong> &larr; Correct answer
+                    </div>
+                    """, unsafe_allow_html=True)
                 elif option == selected and not is_correct:
-                    st.markdown(f"❌ ~~{option}~~ ← Your answer")
+                    st.markdown(f"""
+                    <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px;
+                                padding: 0.5rem 1rem; margin: 0.25rem 0; color: #991B1B;
+                                text-decoration: line-through;">
+                        {option} &larr; Your answer
+                    </div>
+                    """, unsafe_allow_html=True)
                 else:
-                    st.markdown(f"○ {option}")
+                    st.markdown(f"""
+                    <div style="padding: 0.5rem 1rem; margin: 0.25rem 0; color: #5A607F;">
+                        &#9675; {option}
+                    </div>
+                    """, unsafe_allow_html=True)
 
             st.markdown("")
-            st.info(f"💡 **Explanation:** {q['explanation']}")
+            st.info(f"**Explanation:** {q['explanation']}")
 
 
 # ─────────────────────────────────────────────────
